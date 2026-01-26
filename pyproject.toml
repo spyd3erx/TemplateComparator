@@ -1,0 +1,19 @@
+[project]
+name = "templatecomparator"
+authors = [
+    {name = "Juan Delgado", email = "juanddelgadoguerra@gmail.com"},
+]
+version = "0.1.0"
+description = "Template Comparator, es una applicación para comparar dos archivos de excel(Formulas, Values, Administrador de nombres)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pypandoc>=1.16.2",
+    "weasyprint>=68.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
