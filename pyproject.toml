@@ -1,7 +1,7 @@
 [project]
 name = "templatecomparator"
 authors = [
-    {name = "Juan Delgado", email = "juanddelgadoguerra@gmail.com"},
+    {name = "Juan Delgado Guerra", email = "juanddelgadoguerra@gmail.com"},
 ]
 version = "0.1.0"
 description = "Template Comparator, es una applicación para comparar dos archivos de excel(Formulas, Values, Administrador de nombres)"

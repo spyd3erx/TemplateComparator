@@ -1,13 +1,9 @@
-import logging
 import urllib.request
+import pypandoc
 import shutil
 from src.config import INSTALLERS_PATH
 
-logger = logging.getLogger("template_validator")
-
-def setup():
-    logger.info("Iniciando configuración de dependencias...")
-
+def setup_software():
     # Crear carpeta de instaladores si no existe
     INSTALLERS_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -16,16 +12,23 @@ def setup():
     file_path = INSTALLERS_PATH / 'gtk3-runtime-3.24.31-2022-01-04-ts-win64.exe'
 
     try:
-        logger.info(f"Descargando GTK Runtime desde {gtk_url}...")
+        print(f"Descargando GTK Runtime desde {gtk_url}...")
         
         # Download with urllib (Standard Lib)
         with urllib.request.urlopen(gtk_url) as response, open(file_path, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
             
-        logger.info(f"Archivo descargado exitosamente en: {file_path}")
-        logger.info("IMPORTANTE: Por favor instala el GTK Runtime manualmente para habilitar WeasyPrint.")
+        print(f"Archivo descargado exitosamente en: {file_path}")
+        print("IMPORTANTE: Por favor instala el GTK Runtime manualmente para habilitar WeasyPrint.")
 
     except Exception as e:
-        logger.error(f"Error durante la descarga de GTK: {e}")
+        print(f"Error durante la descarga de GTK: {e}")
+        raise
+
+    try:
+        print("Instalando PyPandoc...")
+        pypandoc.download_pandoc(download_folder=str(INSTALLERS_PATH))
+    except Exception as e:
+        print(f"Error durante la instalación de PyPandoc: {e}")
         raise
 
