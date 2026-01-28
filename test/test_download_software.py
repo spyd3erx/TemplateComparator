@@ -1,4 +1,4 @@
-from src.utils.setup import setup_software
+from src.core.utils.setup import setup_software
 
 def test_download_software():
     from src.config import INSTALLERS_PATH

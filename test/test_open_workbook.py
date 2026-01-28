@@ -1,4 +1,5 @@
-from src.utils.load_workbook import LoadWorkbook
+from src.core.utils.load_workbook import LoadWorkbook
+
 import openpyxl
 
 def create_test_file(tmp_path, file_name):
