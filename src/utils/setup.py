@@ -1,14 +1,14 @@
 import urllib.request
 import pypandoc
 import shutil
-from src.config import INSTALLERS_PATH
+from src.config import INSTALLERS_PATH, GTK_URL_DOWNLOAD
 
 def setup_software():
     # Crear carpeta de instaladores si no existe
     INSTALLERS_PATH.mkdir(parents=True, exist_ok=True)
 
     # GTK Runtime URL
-    gtk_url = 'https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases/download/2022-01-04/gtk3-runtime-3.24.31-2022-01-04-ts-win64.exe'
+    gtk_url = GTK_URL_DOWNLOAD
     file_path = INSTALLERS_PATH / 'gtk3-runtime-3.24.31-2022-01-04-ts-win64.exe'
 
     try:
