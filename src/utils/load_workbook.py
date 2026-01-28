@@ -1,4 +1,5 @@
 from openpyxl import load_workbook
+from pathlib import Path
 from src.config import EXCLUDE_PARAMS
 
 
@@ -15,24 +16,31 @@ class LoadWorkbook:
         only_data (bool): Indica si se debe cargar el archivo en modo de solo datos. Default: True
     """
 
+    _excluded_sheets = set(EXCLUDE_PARAMS)
+
     def __init__(self, file_path, only_read=True, only_data=True):
         """
         Inicializa la clase LoadWorkbook.
         """
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"El archivo {file_path} no existe.")
         self.file_path = file_path
         self.workbook = load_workbook(
             file_path, read_only=only_read, data_only=only_data
         )
 
-    def get_sheet_names(self):
+    def get_sheet_names(self) -> list[str]:
         """
         Retorna los nombres de las hojas filtrando las excluidas.
         """
-        exclude_set = set(EXCLUDE_PARAMS)
+        return [
+            name
+            for name in self.workbook.sheetnames
+            if name not in self._excluded_sheets
+        ]
 
-        return [name for name in self.workbook.sheetnames if name not in exclude_set]
-
-    def get_sheet_by_name(self, sheet_name):
+    def get_sheet_by_name(self, sheet_name: str):
         """
         Obtiene una hoja del archivo de excel.
 
@@ -41,8 +49,14 @@ class LoadWorkbook:
         """
         return self.workbook[sheet_name]
 
-    def close(self):
+    def close(self) -> None:
         """
         Cierra el archivo de excel.
         """
         self.workbook.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
