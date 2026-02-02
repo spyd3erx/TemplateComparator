@@ -184,3 +184,6 @@ pyrightconfig.json
 *.xlsm
 *.xltx
 *.xltm
+
+# macros
+*.bas
