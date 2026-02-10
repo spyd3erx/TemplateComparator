@@ -1,7 +1,6 @@
 from src.core import TemplateComparison
 from src.core.compare_templates import comparar_excels_md
 from openpyxl import Workbook
-from pathlib import Path
 import pytest
 
 

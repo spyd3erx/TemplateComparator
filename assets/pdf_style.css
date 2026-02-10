@@ -1,0 +1,66 @@
+@page {
+    size: A4 landscape;
+    margin: 1cm;
+}
+
+body {
+    font-family: "Roboto", "Helvetica", "Lato";
+    font-size: 14pt;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    /* Critical for wrapping */
+    margin-bottom: 20px;
+}
+
+th,
+td {
+    border: 1px solid black;
+    padding: 5px;
+    text-align: left;
+    vertical-align: top;
+    font-size: 8pt;
+
+    /* Ensure text wraps */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-all;
+    /* Force break for long strings without spaces */
+}
+
+/* Column Sizing */
+col:nth-child(1) {
+    width: 10%;
+}
+
+col:nth-child(2) {
+    width: 45%;
+}
+
+col:nth-child(3) {
+    width: 45%;
+}
+
+/* Fallback if cols not supported by Markdown tables well, use nth-child on cells */
+th:nth-child(1),
+td:nth-child(1) {
+    width: 10%;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+    width: 45%;
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+    width: 45%;
+}
+
+th {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
