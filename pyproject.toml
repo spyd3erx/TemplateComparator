@@ -8,6 +8,7 @@ description = "Template Comparator, es una applicación para comparar dos archiv
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "flet>=0.25.0",
     "openpyxl>=3.1.5",
     "pypandoc>=1.16.2",
     "weasyprint>=68.0",
