@@ -167,13 +167,13 @@ class CompareView(ft.Column):
 
     async def _on_file1_picked(self, e):
         """Opens file picker for the first file and updates state."""
-        result = await self._picker1.pick_files(
+        files = await self._picker1.pick_files(
             dialog_title="Seleccionar archivo Excel base",
             allowed_extensions=["xlsx", "xlsm", "xls"],
             file_type=ft.FilePickerFileType.CUSTOM,
         )
-        if result and result.files:
-            self.file1_path = result.files[0].path
+        if files:
+            self.file1_path = files[0].path
             self._rebuild_file_field(1)
             self._try_load_sheets()
             self._update_run_button()
@@ -181,13 +181,13 @@ class CompareView(ft.Column):
 
     async def _on_file2_picked(self, e):
         """Opens file picker for the second file and updates state."""
-        result = await self._picker2.pick_files(
+        files = await self._picker2.pick_files(
             dialog_title="Seleccionar archivo Excel a comparar",
             allowed_extensions=["xlsx", "xlsm", "xls"],
             file_type=ft.FilePickerFileType.CUSTOM,
         )
-        if result and result.files:
-            self.file2_path = result.files[0].path
+        if files:
+            self.file2_path = files[0].path
             self._rebuild_file_field(2)
             self._try_load_sheets()
             self._update_run_button()
