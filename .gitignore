@@ -187,3 +187,6 @@ pyrightconfig.json
 
 # macros
 *.bas
+
+#md
+*.md

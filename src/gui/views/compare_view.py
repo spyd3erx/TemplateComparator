@@ -34,8 +34,10 @@ class CompareView(ft.Column):
         # File pickers (services in Flet 0.80+)
         self._picker1 = ft.FilePicker()
         self._picker2 = ft.FilePicker()
+        self._pdf_picker = ft.FilePicker()
         page.services.append(self._picker1)
         page.services.append(self._picker2)
+        page.services.append(self._pdf_picker)
 
         # Status and progress
         self._status_text = ft.Text("", size=t.CAPTION_SIZE, color=t.TEXT_SECONDARY)
@@ -239,8 +241,16 @@ class CompareView(ft.Column):
                 sheets2 = set(wb2.get_sheet_names())
 
             common = sorted(sheets1 & sheets2)
-            self._sheet_dropdown.options = [ft.dropdown.Option(s) for s in common]
-            self._sheet_dropdown.value = None
+
+            # Primera opción: comparar todo el libro.
+            options: list[ft.dropdown.Option] = [
+                ft.dropdown.Option(text="Todo el libro", key="__all__")
+            ]
+            # Opciones por hoja.
+            options.extend(ft.dropdown.Option(s) for s in common)
+
+            self._sheet_dropdown.options = options
+            self._sheet_dropdown.value = "__all__"
             self.selected_sheet = ""
         except Exception:
             self._sheet_dropdown.options = []
@@ -249,7 +259,9 @@ class CompareView(ft.Column):
         self.compare_mode = e.control.value
 
     def _on_sheet_change(self, e):
-        self.selected_sheet = e.control.value or ""
+        value = e.control.value or ""
+        # Guardamos solo el nombre real de hoja; "__all__" significa todo el libro.
+        self.selected_sheet = "" if value == "__all__" else value
 
     def _update_run_button(self):
         self._run_button.disabled = not (self.file1_path and self.file2_path)
@@ -280,7 +292,12 @@ class CompareView(ft.Column):
         try:
             # Tomar siempre el valor actual del dropdown por si el evento on_change
             # no se disparó (por ejemplo, si el usuario no perdió el foco).
-            current_sheet = (self._sheet_dropdown.value or "").strip() or None
+            raw_value = self._sheet_dropdown.value or ""
+            if raw_value == "__all__":
+                current_sheet = None  # Todo el libro
+            else:
+                current_sheet = raw_value.strip() or None
+
             single_sheet = current_sheet is not None
 
             def _do_compare() -> str:
@@ -489,13 +506,27 @@ class CompareView(ft.Column):
     # ── Export PDF ──
 
     async def _on_export_pdf(self, e):
-        """Exports the markdown report to PDF using asyncio.to_thread."""
+        """Exports the markdown report to PDF letting the user choose the filename."""
+        # Primero pedimos al usuario dónde y con qué nombre guardar el PDF.
+        suggested_name = "reporte_final.pdf"
+        save_path = await self._pdf_picker.save_file(
+            dialog_title="Guardar reporte PDF",
+            file_name=suggested_name,
+            file_type=ft.FilePickerFileType.CUSTOM,
+            allowed_extensions=["pdf"],
+        )
+
+        # Si el usuario cancela el diálogo, no hacemos nada.
+        if not save_path:
+            return
+
+        pdf_path = Path(save_path)
+
         self._set_running(True, "Generando PDF...")
         self._page.update()
 
         def _do_export():
             md_path = REPORTS_PATH / DEFAULT_MARKDOWN_FILE
-            pdf_path = REPORTS_PATH / "reporte_final.pdf"
 
             converter = PDFConverter(md_path)
             converter.convert(pdf_path, delete_source=False)
@@ -503,8 +534,8 @@ class CompareView(ft.Column):
             return pdf_path
 
         try:
-            pdf_path = await asyncio.to_thread(_do_export)
-            self._set_running(False, f"PDF exportado en: {pdf_path}")
+            final_path = await asyncio.to_thread(_do_export)
+            self._set_running(False, f"PDF exportado en: {final_path}")
         except Exception as ex:
             self._set_running(False, f"Error al exportar PDF: {ex}")
 

@@ -6,17 +6,29 @@ FORMULA_PREFIXES = ("=", "+", "-")
 FORMULA_PATTERN = r'"(?:[^"]|"")*"|[^"\s]+'
 
 def normalizar_formula(v: str) -> str:
-    """Normaliza una fórmula de Excel."""
+    """
+    Normaliza una fórmula de Excel (optimizada para rendimiento).
+    Coincide con la lógica de la versión preliminar.
+    """
     if not isinstance(v, str):
         return v
     
     v = v.strip()
     
-    if not _es_formula(v):
+    # Verificar si es fórmula (empieza con =, +, -)
+    if not (v.startswith("=") or v.startswith("+") or v.startswith("-")):
         return v
-    
-    v_limpio = _limpiar_prefijo(v)
-    return _eliminar_caracteres_fijos(_eliminar_espacios_externos(v_limpio))
+
+    # Estandarizar prefijo: '+IF' -> '=IF', '=+IF' -> '=IF', '=-IF' -> '=-IF'
+    temp_v = v
+    if temp_v.startswith("="):
+        temp_v = temp_v[1:]
+    if temp_v.startswith("+"):
+        temp_v = temp_v[1:]
+    v_clean = "=" + temp_v
+
+    # Eliminar espacios fuera de cadenas entrecomilladas (regex optimizado)
+    return "".join(re.findall(FORMULA_PATTERN, v_clean))
 
 def _eliminar_caracteres_fijos(v: str) -> str:
     """Elimina los caracteres de referencia absoluta ($) de la fórmula."""
