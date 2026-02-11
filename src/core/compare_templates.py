@@ -54,7 +54,21 @@ class TemplateComparison:
                 # Filter excluded sheets
                 hojas_comunes = {h for h in hojas_comunes if h not in EXCLUDE_PARAMS}
 
+                # Si no hay hojas en común después del filtrado, generamos igualmente
+                # un reporte Markdown informativo en lugar de salir silenciosamente.
                 if not hojas_comunes:
+                    reporte_md = [
+                        "# Reporte de comparación de plantillas",
+                        "",
+                        "No se encontraron hojas en común entre los archivos seleccionados ",
+                        "después de aplicar los filtros de exclusión configurados.",
+                        "",
+                        f"- Archivo 1: `{self.path1.name}`",
+                        f"- Archivo 2: `{self.path2.name}`",
+                        "",
+                    ]
+                    self._save_report(output_md, reporte_md)
+                    print(f"Reporte generado en: {output_md}")
                     return
 
                 if sheet:
