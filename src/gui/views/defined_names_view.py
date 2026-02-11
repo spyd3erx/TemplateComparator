@@ -1,7 +1,7 @@
 """View for comparing Defined Names (Name Manager) between two Excel files."""
 
+import asyncio
 import flet as ft
-import threading
 from pathlib import Path
 
 from src.gui import theme as t
@@ -179,29 +179,29 @@ class DefinedNamesView(ft.Column):
 
     # ── Compare ──
 
-    def _on_compare(self, e):
+    async def _on_compare(self, e):
         self._set_running(True, "Comparando nombres definidos...")
         self._results_column.controls.clear()
         self._results_column.visible = False
         self.main_page.update()
 
-        def run():
-            try:
-                comparison = DefinedNameComparison(self.file1_path, self.file2_path)
-                results = comparison.defined_names_diff()
-                self._display_results(results)
-                self._set_running(False, "Comparacion completada exitosamente.")
-            except Exception as ex:
-                self._set_running(False, f"Error: {ex}")
-                self._results_column.controls = [
-                    status_badge(str(ex), t.ERROR, ft.Icons.ERROR_OUTLINE)
-                ]
-                self._results_column.visible = True
+        def _do_compare() -> dict:
+            comparison = DefinedNameComparison(self.file1_path, self.file2_path)
+            return comparison.defined_names_diff()
 
-            self._update_run_button()
-            self.main_page.update()
+        try:
+            results = await asyncio.to_thread(_do_compare)
+            self._display_results(results)
+            self._set_running(False, "Comparacion completada exitosamente.")
+        except Exception as ex:
+            self._set_running(False, f"Error: {ex}")
+            self._results_column.controls = [
+                status_badge(str(ex), t.ERROR, ft.Icons.ERROR_OUTLINE)
+            ]
+            self._results_column.visible = True
 
-        threading.Thread(target=run, daemon=True).start()
+        self._update_run_button()
+        self.main_page.update()
 
     def _display_results(self, results: dict):
         """Display comparison results organized by category."""

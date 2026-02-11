@@ -1,7 +1,7 @@
 """View for comparing Excel templates (formulas and values)."""
 
+import asyncio
 import flet as ft
-import threading
 from pathlib import Path
 
 from src.gui import theme as t
@@ -256,44 +256,66 @@ class CompareView(ft.Column):
 
     # ── Compare Logic ──
 
-    def _on_compare(self, e):
-        """Runs the comparison in a background thread."""
+    async def _on_compare(self, e):
+        """Runs the comparison using asyncio.to_thread to keep UI responsive."""
         self._set_running(True, "Comparando archivos...")
         self._results_column.controls.clear()
         self._results_column.visible = False
         self._export_button.disabled = True
         self._page.update()
 
-        def run():
-            try:
+        def _do_compare() -> str:
+            """Blocking comparison work executed in a worker thread."""
+            compare_values = self.compare_mode == "values"
+            sheet = self.selected_sheet or None
+
+            REPORTS_PATH.mkdir(parents=True, exist_ok=True)
+            md_path = REPORTS_PATH / DEFAULT_MARKDOWN_FILE
+
+            comparison = TemplateComparison(self.file1_path, self.file2_path)
+            comparison.compare(compare_values, sheet, str(md_path))
+
+            return md_path.read_text(encoding="utf-8")
+
+        try:
+            # Tomar siempre el valor actual del dropdown por si el evento on_change
+            # no se disparó (por ejemplo, si el usuario no perdió el foco).
+            current_sheet = (self._sheet_dropdown.value or "").strip() or None
+            single_sheet = current_sheet is not None
+
+            def _do_compare() -> str:
+                """Blocking comparison work executed in a worker thread."""
                 compare_values = self.compare_mode == "values"
-                sheet = self.selected_sheet or None
+                sheet = current_sheet
 
                 REPORTS_PATH.mkdir(parents=True, exist_ok=True)
-                md_path = str(REPORTS_PATH / DEFAULT_MARKDOWN_FILE)
+                md_path = REPORTS_PATH / DEFAULT_MARKDOWN_FILE
 
                 comparison = TemplateComparison(self.file1_path, self.file2_path)
-                comparison.compare(compare_values, sheet, md_path)
+                comparison.compare(compare_values, sheet, str(md_path))
 
-                # Read back results to show in GUI
-                md_content = Path(md_path).read_text(encoding="utf-8")
-                self._display_results(md_content)
-                self._set_running(False, "Comparacion completada exitosamente.")
-                self._export_button.disabled = False
+                return md_path.read_text(encoding="utf-8")
 
-            except Exception as ex:
-                self._set_running(False, f"Error: {ex}")
-                self._results_column.controls = [
-                    status_badge(str(ex), t.ERROR, ft.Icons.ERROR_OUTLINE)
-                ]
-                self._results_column.visible = True
+            md_content = await asyncio.to_thread(_do_compare)
+            self._display_results(md_content, single_sheet=single_sheet)
+            self._set_running(False, "Comparacion completada exitosamente.")
+            self._export_button.disabled = False
+        except Exception as ex:
+            self._set_running(False, f"Error: {ex}")
+            self._results_column.controls = [
+                status_badge(str(ex), t.ERROR, ft.Icons.ERROR_OUTLINE)
+            ]
+            self._results_column.visible = True
 
-            self._page.update()
+        self._page.update()
 
-        threading.Thread(target=run, daemon=True).start()
+    def _display_results(self, md_content: str, single_sheet: bool = False):
+        """
+        Parse markdown content and display results.
 
-    def _display_results(self, md_content: str):
-        """Parse markdown content and display in a data table."""
+        - Si `single_sheet` es True, construye la tabla completa (detalle).
+        - Si es False, muestra solo resúmenes por hoja para mejorar rendimiento.
+        """
         lines = md_content.strip().split("\n")
         controls = []
         current_sheet = ""
@@ -304,14 +326,18 @@ class CompareView(ft.Column):
             line = line.strip()
             if not line:
                 if table_rows and current_sheet:
-                    controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
+                    self._append_sheet_result(
+                        controls, current_sheet, header_cols, table_rows, single_sheet
+                    )
                     table_rows = []
                     header_cols = []
                 continue
 
             if line.startswith("## Hoja:"):
                 if table_rows and current_sheet:
-                    controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
+                    self._append_sheet_result(
+                        controls, current_sheet, header_cols, table_rows, single_sheet
+                    )
                     table_rows = []
                     header_cols = []
                 current_sheet = line.replace("## Hoja:", "").strip()
@@ -344,7 +370,9 @@ class CompareView(ft.Column):
 
         # Final flush
         if table_rows and current_sheet:
-            controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
+            self._append_sheet_result(
+                controls, current_sheet, header_cols, table_rows, single_sheet
+            )
 
         if not controls:
             controls.append(
@@ -353,6 +381,48 @@ class CompareView(ft.Column):
 
         self._results_column.controls = controls
         self._results_column.visible = True
+
+    def _append_sheet_result(
+        self,
+        controls: list,
+        sheet_name: str,
+        headers: list,
+        rows: list,
+        single_sheet: bool,
+    ):
+        """
+        Añade el resultado de una hoja a la lista de controles.
+
+        - single_sheet=True: tabla completa.
+        - single_sheet=False: solo resumen con número de diferencias.
+        """
+        diff_count = len(rows)
+        if single_sheet:
+            controls.append(self._build_result_table(sheet_name, headers, rows))
+        else:
+            # Solo mostrar un resumen para no saturar la UI
+            text = (
+                f"Hoja: {sheet_name} - {diff_count} diferencia"
+                f"{'s' if diff_count != 1 else ''}"
+            )
+            color = t.SUCCESS if diff_count == 0 else t.ERROR
+            icon = (
+                ft.Icons.CHECK_CIRCLE_OUTLINE
+                if diff_count == 0
+                else ft.Icons.WARNING_AMBER_ROUNDED
+            )
+            controls.append(
+                ft.Container(
+                    content=ft.Row(
+                        controls=[
+                            ft.Icon(icon, size=18, color=color),
+                            ft.Text(text, size=t.BODY_SIZE, color=t.TEXT_PRIMARY),
+                        ],
+                        spacing=8,
+                    ),
+                    padding=ft.Padding.symmetric(vertical=4),
+                )
+            )
 
     def _build_result_table(self, sheet_name: str, headers: list, rows: list) -> ft.Column:
         """Creates a DataTable for one sheet's differences."""
@@ -418,26 +488,27 @@ class CompareView(ft.Column):
 
     # ── Export PDF ──
 
-    def _on_export_pdf(self, e):
-        """Exports the markdown report to PDF."""
+    async def _on_export_pdf(self, e):
+        """Exports the markdown report to PDF using asyncio.to_thread."""
         self._set_running(True, "Generando PDF...")
         self._page.update()
 
-        def run():
-            try:
-                md_path = REPORTS_PATH / DEFAULT_MARKDOWN_FILE
-                pdf_path = REPORTS_PATH / "reporte_final.pdf"
+        def _do_export():
+            md_path = REPORTS_PATH / DEFAULT_MARKDOWN_FILE
+            pdf_path = REPORTS_PATH / "reporte_final.pdf"
 
-                converter = PDFConverter(md_path)
-                converter.convert(pdf_path, delete_source=False)
+            converter = PDFConverter(md_path)
+            converter.convert(pdf_path, delete_source=False)
 
-                self._set_running(False, f"PDF exportado en: {pdf_path}")
-            except Exception as ex:
-                self._set_running(False, f"Error al exportar PDF: {ex}")
+            return pdf_path
 
-            self._page.update()
+        try:
+            pdf_path = await asyncio.to_thread(_do_export)
+            self._set_running(False, f"PDF exportado en: {pdf_path}")
+        except Exception as ex:
+            self._set_running(False, f"Error al exportar PDF: {ex}")
 
-        threading.Thread(target=run, daemon=True).start()
+        self._page.update()
 
     # ── Helpers ──
 
