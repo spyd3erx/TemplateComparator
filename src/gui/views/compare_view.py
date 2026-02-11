@@ -23,7 +23,7 @@ class CompareView(ft.Column):
 
     def __init__(self, page: ft.Page):
         super().__init__()
-        self.main_page = page
+        self._page = page
         self.file1_path: str = ""
         self.file2_path: str = ""
         self.selected_sheet: str = ""
@@ -31,19 +31,15 @@ class CompareView(ft.Column):
         self.spacing = t.PADDING_MD
         self.expand = True
 
-        # File pickers - Initialize here!
+        # File pickers (services in Flet 0.80+)
         self._picker1 = ft.FilePicker()
         self._picker2 = ft.FilePicker()
-
-        # File pickers
-        self._picker1 = ft.FilePicker()
-        self._picker2 = ft.FilePicker()
+        page.services.append(self._picker1)
+        page.services.append(self._picker2)
 
         # Status and progress
         self._status_text = ft.Text("", size=t.CAPTION_SIZE, color=t.TEXT_SECONDARY)
-        self._progress = ft.ProgressBar(
-            visible=False, color=t.PRIMARY, bgcolor=t.BORDER
-        )
+        self._progress = ft.ProgressBar(visible=False, color=t.PRIMARY, bgcolor=t.BORDER)
         self._results_column = ft.Column(spacing=8, visible=False)
         self._run_button = primary_button(
             "Comparar plantillas",
@@ -63,12 +59,12 @@ class CompareView(ft.Column):
         self._file1_field = file_picker_field(
             label="Archivo base (original)",
             value=self.file1_path,
-            on_click=self._pick_file1,
+            on_click=self._on_file1_picked,
         )
         self._file2_field = file_picker_field(
             label="Archivo a comparar",
             value=self.file2_path,
-            on_click=self._pick_file2,
+            on_click=self._on_file2_picked,
         )
 
         # Mode toggle
@@ -81,8 +77,8 @@ class CompareView(ft.Column):
                 spacing=t.PADDING_MD,
             ),
             value="formulas",
-            on_change=self._on_mode_change,
         )
+        self._mode_toggle.on_change = self._on_mode_change
 
         # Sheet dropdown
         self._sheet_dropdown = ft.Dropdown(
@@ -95,8 +91,6 @@ class CompareView(ft.Column):
             content_padding=ft.Padding.symmetric(horizontal=14, vertical=10),
             expand=True,
         )
-
-        # Assign the event handler here instead of inside the constructor
         self._sheet_dropdown.on_change = self._on_sheet_change
 
         self._build_layout()
@@ -167,55 +161,50 @@ class CompareView(ft.Column):
             actions_section,
             progress_section,
             results_section,
-            self._picker1,
-            self._picker2,
         ]
 
     # ── File Picker Callbacks ──
 
-    async def _pick_file1(self, _):
-        """Pick file 1 using async picker."""
-        try:
-            files = await self._picker1.pick_files(
-                dialog_title="Seleccionar archivo Excel base",
-                allowed_extensions=["xlsx", "xlsm"],
-                file_type=ft.FilePickerFileType.CUSTOM,
-            )
-            if files:
-                self.file1_path = files[0].path
-                self._rebuild_file_field(1)
-                self._try_load_sheets()
-                self._update_run_button()
-                self.main_page.update()
-        except Exception as e:
-            print(f"Error picking file 1: {e}")
+    async def _on_file1_picked(self, e):
+        """Opens file picker for the first file and updates state."""
+        result = await self._picker1.pick_files(
+            dialog_title="Seleccionar archivo Excel base",
+            allowed_extensions=["xlsx", "xlsm", "xls"],
+            file_type=ft.FilePickerFileType.CUSTOM,
+        )
+        if result and result.files:
+            self.file1_path = result.files[0].path
+            self._rebuild_file_field(1)
+            self._try_load_sheets()
+            self._update_run_button()
+            self._page.update()
 
-    async def _pick_file2(self, _):
-        """Pick file 2 using async picker."""
-        try:
-            files = await self._picker2.pick_files(
-                dialog_title="Seleccionar archivo Excel a comparar",
-                allowed_extensions=["xlsx", "xlsm"],
-                file_type=ft.FilePickerFileType.CUSTOM,
-            )
-            if files:
-                self.file2_path = files[0].path
-                self._rebuild_file_field(2)
-                self._try_load_sheets()
-                self._update_run_button()
-                self.main_page.update()
-        except Exception as e:
-            print(f"Error picking file 2: {e}")
+    async def _on_file2_picked(self, e):
+        """Opens file picker for the second file and updates state."""
+        result = await self._picker2.pick_files(
+            dialog_title="Seleccionar archivo Excel a comparar",
+            allowed_extensions=["xlsx", "xlsm", "xls"],
+            file_type=ft.FilePickerFileType.CUSTOM,
+        )
+        if result and result.files:
+            self.file2_path = result.files[0].path
+            self._rebuild_file_field(2)
+            self._try_load_sheets()
+            self._update_run_button()
+            self._page.update()
 
     def _rebuild_file_field(self, index: int):
         """Rebuild the file field widget to reflect the new path."""
         path = self.file1_path if index == 1 else self.file2_path
         label = "Archivo base (original)" if index == 1 else "Archivo a comparar"
+        picker = self._picker1 if index == 1 else self._picker2
+
+        on_click = self._on_file1_picked if index == 1 else self._on_file2_picked
 
         new_field = file_picker_field(
             label=label,
             value=Path(path).name if path else "",
-            on_click=self._pick_file1 if index == 1 else self._pick_file2,
+            on_click=on_click,
         )
 
         if index == 1:
@@ -273,7 +262,7 @@ class CompareView(ft.Column):
         self._results_column.controls.clear()
         self._results_column.visible = False
         self._export_button.disabled = True
-        self.main_page.update()
+        self._page.update()
 
         def run():
             try:
@@ -299,7 +288,7 @@ class CompareView(ft.Column):
                 ]
                 self._results_column.visible = True
 
-            self.main_page.update()
+            self._page.update()
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -315,18 +304,14 @@ class CompareView(ft.Column):
             line = line.strip()
             if not line:
                 if table_rows and current_sheet:
-                    controls.append(
-                        self._build_result_table(current_sheet, header_cols, table_rows)
-                    )
+                    controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
                     table_rows = []
                     header_cols = []
                 continue
 
             if line.startswith("## Hoja:"):
                 if table_rows and current_sheet:
-                    controls.append(
-                        self._build_result_table(current_sheet, header_cols, table_rows)
-                    )
+                    controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
                     table_rows = []
                     header_cols = []
                 current_sheet = line.replace("## Hoja:", "").strip()
@@ -336,11 +321,7 @@ class CompareView(ft.Column):
                     ft.Container(
                         content=ft.Row(
                             controls=[
-                                ft.Icon(
-                                    ft.Icons.CHECK_CIRCLE_OUTLINE,
-                                    color=t.SUCCESS,
-                                    size=18,
-                                ),
+                                ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE, color=t.SUCCESS, size=18),
                                 ft.Text(
                                     f"Hoja: {current_sheet} - Sin diferencias",
                                     color=t.SUCCESS,
@@ -363,23 +344,17 @@ class CompareView(ft.Column):
 
         # Final flush
         if table_rows and current_sheet:
-            controls.append(
-                self._build_result_table(current_sheet, header_cols, table_rows)
-            )
+            controls.append(self._build_result_table(current_sheet, header_cols, table_rows))
 
         if not controls:
             controls.append(
-                status_badge(
-                    "Sin resultados para mostrar", t.WARNING, ft.Icons.INFO_OUTLINE
-                )
+                status_badge("Sin resultados para mostrar", t.WARNING, ft.Icons.INFO_OUTLINE)
             )
 
         self._results_column.controls = controls
         self._results_column.visible = True
 
-    def _build_result_table(
-        self, sheet_name: str, headers: list, rows: list
-    ) -> ft.Column:
+    def _build_result_table(self, sheet_name: str, headers: list, rows: list) -> ft.Column:
         """Creates a DataTable for one sheet's differences."""
         diff_count = len(rows)
         color = t.ERROR if diff_count > 0 else t.SUCCESS
@@ -410,21 +385,14 @@ class CompareView(ft.Column):
         badge = status_badge(
             f"{diff_count} diferencia{'s' if diff_count != 1 else ''}",
             color,
-            ft.Icons.WARNING_AMBER_ROUNDED
-            if diff_count > 0
-            else ft.Icons.CHECK_CIRCLE_OUTLINE,
+            ft.Icons.WARNING_AMBER_ROUNDED if diff_count > 0 else ft.Icons.CHECK_CIRCLE_OUTLINE,
         )
 
         return ft.Column(
             controls=[
                 ft.Row(
                     controls=[
-                        ft.Text(
-                            f"Hoja: {sheet_name}",
-                            weight=ft.FontWeight.W_600,
-                            size=t.BODY_SIZE,
-                            color=t.TEXT_PRIMARY,
-                        ),
+                        ft.Text(f"Hoja: {sheet_name}", weight=ft.FontWeight.W_600, size=t.BODY_SIZE, color=t.TEXT_PRIMARY),
                         badge,
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -433,7 +401,7 @@ class CompareView(ft.Column):
                     content=ft.DataTable(
                         columns=columns,
                         rows=data_rows,
-                        border=ft.Border.all(1, t.BORDER),
+                        border=ft.border.all(1, t.BORDER),
                         border_radius=t.BUTTON_RADIUS,
                         heading_row_color=ft.Colors.with_opacity(0.04, t.PRIMARY),
                         heading_row_height=40,
@@ -453,7 +421,7 @@ class CompareView(ft.Column):
     def _on_export_pdf(self, e):
         """Exports the markdown report to PDF."""
         self._set_running(True, "Generando PDF...")
-        self.main_page.update()
+        self._page.update()
 
         def run():
             try:
@@ -467,7 +435,7 @@ class CompareView(ft.Column):
             except Exception as ex:
                 self._set_running(False, f"Error al exportar PDF: {ex}")
 
-            self.main_page.update()
+            self._page.update()
 
         threading.Thread(target=run, daemon=True).start()
 

@@ -27,13 +27,11 @@ class DefinedNamesView(ft.Column):
         self.spacing = t.PADDING_MD
         self.expand = True
 
-        # File pickers - Initialize here!
+        # File pickers (services en Flet 0.80+)
         self._picker1 = ft.FilePicker()
         self._picker2 = ft.FilePicker()
-
-        # File pickers
-        self._picker1 = ft.FilePicker()
-        self._picker2 = ft.FilePicker()
+        page.services.append(self._picker1)
+        page.services.append(self._picker2)
 
         # Controls
         self._status_text = ft.Text("", size=t.CAPTION_SIZE, color=t.TEXT_SECONDARY)
@@ -113,8 +111,6 @@ class DefinedNamesView(ft.Column):
             actions_section,
             progress_section,
             results_section,
-            self._picker1,
-            self._picker2,
         ]
 
     # ── File Picker Callbacks ──
