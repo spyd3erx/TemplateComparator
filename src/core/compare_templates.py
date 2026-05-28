@@ -13,6 +13,7 @@ def normalizar_formula(v: Any) -> Any:
     3. Identifica cadenas entre comillas dobles.
     4. Elimina espacios fuera de cadenas.
     5. Estandariza el prefijo a '='.
+    6. Estandarizar valores fijos: Elimina '$' de referencias absolutas.
     """
     if not isinstance(v, str):
         return v
@@ -43,7 +44,8 @@ def normalizar_formula(v: Any) -> Any:
     pattern = r'"(?:[^"]|"")*"|[^"\s]+'
     parts = re.findall(pattern, v_clean)
     
-    return "".join(parts)
+    formula_clean =  "".join(parts)
+    return formula_clean
 
 def normalizar(v: Any) -> Any:
     if v is None:

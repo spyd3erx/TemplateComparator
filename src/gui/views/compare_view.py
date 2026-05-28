@@ -15,7 +15,7 @@ from src.gui.widgets import (
 )
 from src.core.compare_templates import TemplateComparison
 from src.core.utils.converter_pdf import PDFConverter
-from src.config import REPORTS_PATH, DEFAULT_MARKDOWN_FILE
+from src.config import REPORTS_PATH, DEFAULT_MARKDOWN_FILE, ALLOWED_FILE_EXTENSIONS
 
 
 class CompareView(ft.Column):
@@ -171,7 +171,7 @@ class CompareView(ft.Column):
         """Opens file picker for the first file and updates state."""
         files = await self._picker1.pick_files(
             dialog_title="Seleccionar archivo Excel base",
-            allowed_extensions=["xlsx", "xlsm", "xls"],
+            allowed_extensions=ALLOWED_FILE_EXTENSIONS,
             file_type=ft.FilePickerFileType.CUSTOM,
         )
         if files:
@@ -185,7 +185,7 @@ class CompareView(ft.Column):
         """Opens file picker for the second file and updates state."""
         files = await self._picker2.pick_files(
             dialog_title="Seleccionar archivo Excel a comparar",
-            allowed_extensions=["xlsx", "xlsm", "xls"],
+            allowed_extensions=ALLOWED_FILE_EXTENSIONS,
             file_type=ft.FilePickerFileType.CUSTOM,
         )
         if files:
