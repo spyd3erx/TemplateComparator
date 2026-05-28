@@ -1,4 +1,4 @@
-from src.core.utils.normalize_formulas import normalizar
+from src.core.compare_templates import normalizar
 
 
 class TestEsFormula:

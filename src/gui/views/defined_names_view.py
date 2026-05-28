@@ -14,6 +14,7 @@ from src.gui.widgets import (
     status_badge,
 )
 from src.core.defined_name_comparison import DefinedNameComparison
+from src.config import ALLOWED_FILE_EXTENSIONS
 
 
 class DefinedNamesView(ft.Column):
@@ -120,7 +121,7 @@ class DefinedNamesView(ft.Column):
         try:
             files = await self._picker1.pick_files(
                 dialog_title="Seleccionar archivo Excel base",
-                allowed_extensions=["xlsx", "xlsm"],
+                allowed_extensions=ALLOWED_FILE_EXTENSIONS,
                 file_type=ft.FilePickerFileType.CUSTOM,
             )
             if files:
@@ -136,7 +137,7 @@ class DefinedNamesView(ft.Column):
         try:
             files = await self._picker2.pick_files(
                 dialog_title="Seleccionar archivo Excel a comparar",
-                allowed_extensions=["xlsx", "xlsm"],
+                allowed_extensions=ALLOWED_FILE_EXTENSIONS,
                 file_type=ft.FilePickerFileType.CUSTOM,
             )
             if files:
