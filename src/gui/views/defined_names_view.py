@@ -312,40 +312,44 @@ class DefinedNamesView(ft.Column):
                     title, weight=ft.FontWeight.W_600, size=t.BODY_SIZE, color=color
                 ),
                 ft.Container(
-                    content=ft.DataTable(
-                        columns=[
-                            ft.DataColumn(
-                                ft.Text(
-                                    "Nombre",
-                                    weight=ft.FontWeight.W_600,
-                                    size=t.CAPTION_SIZE,
-                                )
-                            ),
-                            ft.DataColumn(
-                                ft.Text(
-                                    file1_stem,
-                                    weight=ft.FontWeight.W_600,
-                                    size=t.CAPTION_SIZE,
-                                )
-                            ),
-                            ft.DataColumn(
-                                ft.Text(
-                                    file2_stem,
-                                    weight=ft.FontWeight.W_600,
-                                    size=t.CAPTION_SIZE,
-                                )
-                            ),
-                        ],
-                        rows=rows,
-                        border=ft.Border.all(1, t.BORDER),
-                        border_radius=t.BUTTON_RADIUS,
-                        heading_row_color=ft.Colors.with_opacity(0.04, color),
-                        heading_row_height=40,
-                        data_row_min_height=36,
-                        column_spacing=t.PADDING_SM,
-                        horizontal_margin=t.PADDING_SM,
+                    content=ft.SingleChildScrollView(
+                        content=ft.DataTable(
+                            columns=[
+                                ft.DataColumn(
+                                    ft.Text(
+                                        "Nombre",
+                                        weight=ft.FontWeight.W_600,
+                                        size=t.CAPTION_SIZE,
+                                    )
+                                ),
+                                ft.DataColumn(
+                                    ft.Text(
+                                        file1_stem,
+                                        weight=ft.FontWeight.W_600,
+                                        size=t.CAPTION_SIZE,
+                                    )
+                                ),
+                                ft.DataColumn(
+                                    ft.Text(
+                                        file2_stem,
+                                        weight=ft.FontWeight.W_600,
+                                        size=t.CAPTION_SIZE,
+                                    )
+                                ),
+                            ],
+                            rows=rows,
+                            border=ft.Border.all(1, t.BORDER),
+                            border_radius=t.BUTTON_RADIUS,
+                            heading_row_color=ft.Colors.with_opacity(0.04, color),
+                            heading_row_height=40,
+                            data_row_min_height=36,
+                            column_spacing=t.PADDING_SM,
+                            horizontal_margin=t.PADDING_SM,
+                        ),
+                        horizontal_scroll=ft.ScrollMode.AUTO,
                     ),
                     border_radius=t.BUTTON_RADIUS,
+                    expand=True,
                 ),
             ],
             spacing=6,
@@ -381,33 +385,37 @@ class DefinedNamesView(ft.Column):
                     title, weight=ft.FontWeight.W_600, size=t.BODY_SIZE, color=color
                 ),
                 ft.Container(
-                    content=ft.DataTable(
-                        columns=[
-                            ft.DataColumn(
-                                ft.Text(
-                                    "Nombre",
-                                    weight=ft.FontWeight.W_600,
-                                    size=t.CAPTION_SIZE,
-                                )
-                            ),
-                            ft.DataColumn(
-                                ft.Text(
-                                    "Valor",
-                                    weight=ft.FontWeight.W_600,
-                                    size=t.CAPTION_SIZE,
-                                )
-                            ),
-                        ],
-                        rows=rows,
-                        border=ft.Border.all(1, t.BORDER),
-                        border_radius=t.BUTTON_RADIUS,
-                        heading_row_color=ft.Colors.with_opacity(0.04, color),
-                        heading_row_height=40,
-                        data_row_min_height=36,
-                        column_spacing=t.PADDING_SM,
-                        horizontal_margin=t.PADDING_SM,
+                    content=ft.SingleChildScrollView(
+                        content=ft.DataTable(
+                            columns=[
+                                ft.DataColumn(
+                                    ft.Text(
+                                        "Nombre",
+                                        weight=ft.FontWeight.W_600,
+                                        size=t.CAPTION_SIZE,
+                                    )
+                                ),
+                                ft.DataColumn(
+                                    ft.Text(
+                                        "Valor",
+                                        weight=ft.FontWeight.W_600,
+                                        size=t.CAPTION_SIZE,
+                                    )
+                                ),
+                            ],
+                            rows=rows,
+                            border=ft.Border.all(1, t.BORDER),
+                            border_radius=t.BUTTON_RADIUS,
+                            heading_row_color=ft.Colors.with_opacity(0.04, color),
+                            heading_row_height=40,
+                            data_row_min_height=36,
+                            column_spacing=t.PADDING_SM,
+                            horizontal_margin=t.PADDING_SM,
+                        ),
+                        horizontal_scroll=ft.ScrollMode.AUTO,
                     ),
                     border_radius=t.BUTTON_RADIUS,
+                    expand=True,
                 ),
             ],
             spacing=6,
